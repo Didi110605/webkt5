@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Погодный компонент</title>
+</head>
+<body>
+    <weather-widget></weather-widget>
+
+    <script>
+        class WeatherWidget extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+                this.data = null;
+        
+                // Стили находятся внутри Shadow DOM
+                const style = document.createElement('style');
+                style.textContent = `
+                    :host {
+                        --background-color: #ffe4e1;
+                        --text-color: #333;
+                        --header-color: #d64e78;
+                        --temperature-color: #ff69b4;
+                    }
+                    .widget {
+                        background-color: var(--background-color);
+                        color: var(--text-color);
+                        padding: 20px;
+                        border-radius: 12px;
+                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                        text-align: center;
+                        width: 250px;
+                    }
+                    h2 {
+                        margin: 0 0 10px;
+                        font-size: 1.5em;
+                        font-weight: 600;
+                        color: var(--header-color);
+                    }
+                    .temperature {
+                        font-weight: bold;
+                        font-size: 2.5em;
+                        margin: 10px 0;
+                        color: var(--temperature-color);
+                    }
+                    .condition {
+                        font-size: 1.2em;
+                        color: #666;
+                    }
+                `;
+        
+                this.widgetContainer = document.createElement('div');
+                this.widgetContainer.classList.add('widget');
+        
+                this.shadowRoot.append(style, this.widgetContainer);
+                this.apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=55.75&longitude=37.62&current_weather=true';
+                this.fetchWeather();
+            }
+        
+            async fetchWeather() {
+                try {
+                    const response = await fetch(this.apiUrl);
+                    const weatherData = await response.json();
+                    this.data = weatherData.current_weather;
+
+                    this.updateWidget();
+                } catch (error) {
+                    console.error('Ошибка получения данных:', error);
+                }
+            }
+        
+            updateWidget() {
+                if (this.data) {
+                    const weatherCodes = {
+                        0: "Ясно",
+                        1: "Пасмурно",
+                        2: "Облачно",
+                        3: "Дождь",
+                        4: "Снег",
+                        5: "Град",
+                        6: "Туман",
+                        7: "Сильный дождь",
+                        8: "Сильный снег",
+                        9: "Грозы",
+                        // добавьте другие коды по вашему усмотрению
+                    };
+
+                    const condition = weatherCodes[this.data.weathercode] || "Неизвестно";
+
+                    this.widgetContainer.innerHTML = `
+                        <h2>Текущая погода</h2>
+                        <div class="temperature">${this.data.temperature} °C</div>
+                        <div class="condition">${condition}</div>
+                    `;
+                }
+            }
+        }
+        
+        customElements.define('weather-widget', WeatherWidget);
+    </script>
+</body>
+</html>
